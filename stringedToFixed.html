@@ -1,0 +1,84 @@
+<script src="https://rawgit.com/Vojis/ab280c9710c359c187dc685262361a14/raw/8e30a9888232af8d5600d97f0f920462badf1c5d/simpleTest.js"></script>
+<script>
+
+function stringedToFixed(number, precision) {
+	var stringedNumber = number.toString();	
+	// if precision is negative, or larger than 20, throw a RangeError (following the native .toFixed() method).
+	if (precision < 0 || precision > 20) {
+		throw new RangeError('stringedToFixed() precision argument must be between 0 and 20');
+	}
+	// if no precision is passed, it is implied that precision is 0 (following the native .toFixed() method).
+	if (precision === undefined) {
+		return stringedToFixed(number, 0);
+	}
+	// if a whole number is inputed, return a string that is equal to the number with decimal zeros equal to precision
+	if (stringedNumber.indexOf('.') === -1) {
+		return stringedNumber + "." + new Array(precision + 1).join("0");
+	}
+	var indexOfDot = stringedNumber.indexOf('.');
+	var noDotString = stringedNumber.replace('.', '');
+	// breaking down the string into two parts, with noDotStringFront being the part left from where the dot stood
+	// and noDotStringBack being the part right from where the dot stood.
+	var noDotStringFront = noDotString.slice(0, precision + indexOfDot);
+	var noDotStringBack = noDotString.slice(precision + indexOfDot);
+	// putting together the two sides with the dot in a new position.
+	var stringWithMovedDot = noDotStringFront + '.' + noDotStringBack;
+	// if the stringWithMovedDot ends with the dot (precision > number of decimal places), delete the dot, and
+	// if necessary, add the missing zeros at the end.
+	if (stringWithMovedDot.indexOf('.') === stringWithMovedDot.length - 1) {
+		stringWithMovedDot = stringWithMovedDot.replace('.', '');
+		var numberOfZerosMissing = noDotString.length - precision - indexOfDot;
+		if (numberOfZerosMissing < 0) {
+				numberOfZerosMissing = Math.abs(numberOfZerosMissing);
+				var missingZeros = new Array(numberOfZerosMissing + 1).join('0');
+				stringWithMovedDot = stringWithMovedDot + missingZeros;
+			}
+	}
+	// rounding the stringWithMoved dot and getting the final stringedToFixed() value, using JS native methods.
+	var rounded = Math.round(Number(stringWithMovedDot));
+	var result = rounded / Math.pow(10, precision);
+	var lengthAfterDot = noDotString.length - indexOfDot;
+	if (precision > lengthAfterDot) {
+		var remainingZeros = precision - lengthAfterDot;
+		if (noDotString.indexOf('.') === 0) {
+			remainingZeros++;
+		}
+		result = result + new Array(remainingZeros + 1).join("0")
+	}
+	return result.toString();
+}
+
+tests({
+  'It should round if no precision was specified.': function () {
+    eq(stringedToFixed(0.615), "1");
+  },
+  'It should return a string equal to number, and number of zeros after decimal point equal to precision, if the provided number is a whole number.': function () {
+    eq(stringedToFixed(1, 2), "1.00");
+  },
+  'It should return the remaining zeros, if precision is greater than the number.length after the dot.': function () {
+    eq(stringedToFixed(1.126, 4), "1.1260");
+  },
+  'It should round up correctly if number is 10.235, and precision is 2.': function () {
+    eq(stringedToFixed(10.235, 2), "10.24");
+  },
+  'It should round up correctly if number is 0.615, and precision is 2.': function () {
+    eq(stringedToFixed(0.615, 2), "0.62");
+  },
+  'It should round up correctly if number is 1.005, and precision is 2.': function () {
+    eq(stringedToFixed(1.005, 2), "1.01");
+  },
+  'It should round corectly, if decimal starts with a zero.': function() {
+    eq(stringedToFixed(10.00265, 3), "10.003");
+    eq(stringedToFixed(10.00244, 3), "10.002");
+  },
+  'It should throw a RangeError if precision is negative or more than 20.': function() {
+  	var isRangeError = false;
+  	try {
+  		stringedToFixed(1, -1);
+  	} catch (e) {
+  		isRangeError = (e instanceof RangeError);
+  	}
+  	eq(isRangeError, true);
+  }
+ });
+</script>
